@@ -1,8 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { Search } from "lucide-react"
+import { useNavigate } from "@tanstack/react-router"
+import { Search, Home } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 import {
   Sidebar,
   SidebarContent,
@@ -13,18 +15,26 @@ import {
   SidebarMenu,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { Badge } from "@/components/ui/badge"
 import { PackageTree } from "@/components/package-tree"
 import type { PackageData } from "@/types/package-types"
 
 interface PackageSidebarProps {
   packageData: PackageData
   selectedPackage: string | null
-  onSelectPackage: (packageName: string) => void
 }
 
-export function PackageSidebar({ packageData, selectedPackage, onSelectPackage }: PackageSidebarProps) {
+export function PackageSidebar({ packageData, selectedPackage }: PackageSidebarProps) {
   const [searchQuery, setSearchQuery] = useState("")
+  const [activeFilters, setActiveFilters] = useState<string[]>([])
+  const navigate = useNavigate()
+
+  const toggleFilter = (filter: string) => {
+    setActiveFilters((prev) => (prev.includes(filter) ? prev.filter((f) => f !== filter) : [...prev, filter]))
+  }
+
+  const handleSelectPackage = (packagePath: string) => {
+    navigate({ to: "/package/$packagePath", params: { packagePath: encodeURIComponent(packagePath) } })
+  }
 
   const stats = {
     total: Object.keys(packageData.packages || {}).length,
@@ -38,15 +48,20 @@ export function PackageSidebar({ packageData, selectedPackage, onSelectPackage }
     <Sidebar>
       <SidebarHeader>
         <div className="p-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search packages by name or version..."
-              className="pl-8 h-9"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+          <div className="relative flex gap-2">
+            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navigate({ to: "/" })}>
+              <Home className="h-4 w-4" />
+            </Button>
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search packages by name or version..."
+                className="pl-8 h-9"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
           </div>
         </div>
       </SidebarHeader>
@@ -65,18 +80,46 @@ export function PackageSidebar({ packageData, selectedPackage, onSelectPackage }
               </div>
             </div>
             <div className="flex gap-2 px-2 mb-4">
-              <Badge variant="outline" className="bg-blue-500/10 text-blue-500 hover:bg-blue-500/20">
+              <button
+                onClick={() => toggleFilter("regular")}
+                className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+                  activeFilters.includes("regular")
+                    ? "bg-blue-500 text-white border-transparent"
+                    : "bg-blue-500/10 text-blue-500 border-transparent hover:bg-blue-500/20"
+                }`}
+              >
                 Regular
-              </Badge>
-              <Badge variant="outline" className="bg-purple-500/10 text-purple-500 hover:bg-purple-500/20">
+              </button>
+              <button
+                onClick={() => toggleFilter("dev")}
+                className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+                  activeFilters.includes("dev")
+                    ? "bg-purple-500 text-white border-transparent"
+                    : "bg-purple-500/10 text-purple-500 border-transparent hover:bg-purple-500/20"
+                }`}
+              >
                 Dev
-              </Badge>
-              <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20">
+              </button>
+              <button
+                onClick={() => toggleFilter("optional")}
+                className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+                  activeFilters.includes("optional")
+                    ? "bg-yellow-500 text-white border-transparent"
+                    : "bg-yellow-500/10 text-yellow-500 border-transparent hover:bg-yellow-500/20"
+                }`}
+              >
                 Optional
-              </Badge>
-              <Badge variant="outline" className="bg-pink-500/10 text-pink-500 hover:bg-pink-500/20">
+              </button>
+              <button
+                onClick={() => toggleFilter("peer")}
+                className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+                  activeFilters.includes("peer")
+                    ? "bg-pink-500 text-white border-transparent"
+                    : "bg-pink-500/10 text-pink-500 border-transparent hover:bg-pink-500/20"
+                }`}
+              >
                 Peer
-              </Badge>
+              </button>
             </div>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -88,7 +131,8 @@ export function PackageSidebar({ packageData, selectedPackage, onSelectPackage }
                 packageData={packageData}
                 searchQuery={searchQuery}
                 selectedPackage={selectedPackage}
-                onSelectPackage={onSelectPackage}
+                onSelectPackage={handleSelectPackage}
+                activeFilters={activeFilters}
               />
             </SidebarMenu>
           </SidebarGroupContent>

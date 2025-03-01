@@ -1,9 +1,12 @@
-import { PackageExplorer } from "@/components/package-explorer"
+"use client"
+
+import { RouterProvider } from "@tanstack/react-router"
+import { router } from "@/lib/router"
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-background">
-      <PackageExplorer />
+      <RouterProvider router={router} />
     </div>
   )
 }

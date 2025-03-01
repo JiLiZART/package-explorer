@@ -1,19 +1,17 @@
 "use client"
 
+import { useParams, useRouteContext } from "@tanstack/react-router"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ExternalLink, Copy } from "lucide-react"
-import type { PackageData } from "@/types/package-types"
 
-interface PackageDetailsProps {
-  packageData: PackageData
-  selectedPackage: string | null
-}
+export function PackageDetails() {
+  const { packagePath } = useParams({ from: "/package/$packagePath" })
+  const { packageData } = useRouteContext({ from: "/" })
 
-export function PackageDetails({ packageData, selectedPackage }: PackageDetailsProps) {
-  if (!selectedPackage) {
+  if (!packagePath) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground">
         Select a package to view details
@@ -21,7 +19,8 @@ export function PackageDetails({ packageData, selectedPackage }: PackageDetailsP
     )
   }
 
-  const packageInfo = packageData.packages?.[`node_modules/${selectedPackage}`]
+  const decodedPath = decodeURIComponent(packagePath)
+  const packageInfo = packageData.packages?.[decodedPath]
 
   if (!packageInfo) {
     return (
@@ -34,6 +33,7 @@ export function PackageDetails({ packageData, selectedPackage }: PackageDetailsP
   const dependencyCount = Object.keys(dependencies).length
 
   // Find packages that depend on this one
+  const packageName = decodedPath.replace("node_modules/", "")
   const dependents = Object.entries(packageData.packages || {})
     .filter(([_, pkg]) => {
       const deps = {
@@ -42,22 +42,22 @@ export function PackageDetails({ packageData, selectedPackage }: PackageDetailsP
         ...pkg.peerDependencies,
         ...pkg.optionalDependencies,
       }
-      return deps && selectedPackage in deps
+      return deps && packageName in deps
     })
-    .map(([path]) => path.replace("node_modules/", ""))
+    .map(([path]) => path)
 
   return (
     <div className="border-l border-r h-full overflow-y-auto">
       <div className="p-4 border-b sticky top-0 bg-background z-10">
         <div className="flex items-center gap-2">
-          <h1 className="text-xl font-semibold">{selectedPackage}</h1>
+          <h1 className="text-xl font-semibold">{packageName}</h1>
           <Badge variant="outline" className="text-sm">
             {version}
           </Badge>
         </div>
         <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
           <span>Type: dependency</span>
-          <span>Path: {selectedPackage}</span>
+          <span>Path: {decodedPath}</span>
         </div>
       </div>
 
@@ -78,7 +78,7 @@ export function PackageDetails({ packageData, selectedPackage }: PackageDetailsP
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground">Location</h3>
                   <div className="flex items-center gap-2 mt-1">
-                    <code className="text-sm bg-muted p-1 rounded">node_modules/{selectedPackage}</code>
+                    <code className="text-sm bg-muted p-1 rounded">{decodedPath}</code>
                     <Button variant="ghost" size="icon" className="h-6 w-6">
                       <Copy className="h-3 w-3" />
                     </Button>
@@ -151,7 +151,7 @@ export function PackageDetails({ packageData, selectedPackage }: PackageDetailsP
 
           <Card>
             <CardHeader>
-              <CardTitle>Other versions of {selectedPackage}</CardTitle>
+              <CardTitle>Other versions of {packageName}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {[version, "2.0.0", "1.2.1"].map((ver, index) => (
