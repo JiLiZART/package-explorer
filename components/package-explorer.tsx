@@ -1,45 +1,46 @@
 "use client";
-import { Outlet, useRouter } from "@tanstack/react-router";
-import { PackageSidebar } from "@/components/package-sidebar";
-import { PackageAnalysis } from "@/components/package-analysis";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { usePackageData } from "@/hooks/use-package-data";
-import { FileUploader } from "@/components/file-uploader";
 
-export function PackageExplorer() {
-  const { packageData, loadPackageData, isLoaded } = usePackageData();
-  const router = useRouter();
+import { FileUploader } from "./file-uploader";
+import { Header } from "./header";
+import { SidebarProvider } from "./ui/sidebar";
+import { PackageSidebar } from "./package-sidebar";
+import { usePackage } from "@/context/package-context";
+import { usePathname } from "next/navigation";
+import { PackageAnalysis } from "./package-analysis";
 
-  console.log({ router });
-  const packagePath = router.state?.currentLocation
-    ? router.state?.currentLocation?.pathname.split("/package/")[1]
-    : null;
+export function PackageExplorer({ children }: { children: React.ReactNode }) {
+  const { packageData, isLoaded, loadPackageData } = usePackage();
+  const pathname = usePathname();
 
   if (!isLoaded) {
     return <FileUploader onFileLoaded={loadPackageData} />;
   }
 
+  const packagePath = pathname.startsWith("/package/")
+    ? pathname.replace("/package/", "")
+    : null;
+
   return (
-    <SidebarProvider>
-      <div
-        className={`grid ${
-          packagePath
-            ? "md:grid-cols-[320px_1fr_300px]"
-            : "md:grid-cols-[320px_1fr]"
-        } h-screen overflow-hidden`}
-      >
-        <PackageSidebar
-          packageData={packageData}
-          selectedPackage={packagePath ? decodeURIComponent(packagePath) : null}
-        />
-        <Outlet context={{ packageData }} />
-        {packagePath && (
-          <PackageAnalysis
-            packageData={packageData}
-            selectedPackage={decodeURIComponent(packagePath)}
-          />
-        )}
-      </div>
-    </SidebarProvider>
+    <div className="h-screen flex flex-col min-h-screen bg-background">
+      <Header />
+
+      <SidebarProvider className="pt-[58px]">
+        <PackageSidebar />
+
+        <div
+          className={`grid ${
+            packagePath ? "md:grid-cols-[1fr_300px]" : "md:grid-cols-[1fr]"
+          } h-screen overflow-hidden w-full`}
+        >
+          <div className="w-full">{children}</div>
+          {packagePath && (
+            <PackageAnalysis
+              packageData={packageData}
+              selectedPackage={decodeURIComponent(packagePath)}
+            />
+          )}
+        </div>
+      </SidebarProvider>
+    </div>
   );
 }
