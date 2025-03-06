@@ -5,7 +5,7 @@ type Dependency = {
     version: string;
 }
 
-export function PackageWhy({ dependents }: { dependents: Dependency[] }) {
+export function PackageWhy({ dependents = [] }: { dependents: Dependency[] }) {
     return (
         <Card>
             <CardHeader>

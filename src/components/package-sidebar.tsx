@@ -34,7 +34,7 @@ export function PackageSidebar() {
 
   const handleSelectPackage = async (packagePath: string) => {
     await navigate({
-      to: encodeURIComponent(packagePath)
+      to: `/${encodeURIComponent(packagePath)}`
     });
   };
 

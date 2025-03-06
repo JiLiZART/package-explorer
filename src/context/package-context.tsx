@@ -11,6 +11,8 @@ interface PackageContextType {
     searchQuery: string;
     setSearchQuery: (query: string) => void;
     findPackage: (packageName: string) => PackageInfo | undefined
+    search: (packageName: string) => PackageInfo[] | undefined
+    getPackages: () => PackageInfo[]
 }
 
 const PackageContext = createContext<PackageContextType | undefined>(undefined);
@@ -26,12 +28,23 @@ export function PackageProvider({ children }: { children: React.ReactNode }) {
         setIsLoaded(true);
 
         packageSearchRef.current = new PackageSearch(JSON.stringify(data));
-
-        debugger;
     };
 
     const findPackage = (packageName: string) => {
-        return packageSearchRef.current?.find(packageName);
+        const pkg = packageSearchRef.current?.find(packageName);
+
+        return pkg;
+    }
+    const search = (query: string) => {
+        const pkg = packageSearchRef.current?.search(query);
+
+        setSearchQuery(query);
+
+        return pkg;
+    }
+
+    const getPackages = () => {
+        return packageSearchRef.current?.getPackages() || [];
     }
 
     return (
@@ -42,7 +55,9 @@ export function PackageProvider({ children }: { children: React.ReactNode }) {
                 isLoaded,
                 searchQuery,
                 setSearchQuery,
+                getPackages,
                 findPackage,
+                search,
             }}
         >
             {children}

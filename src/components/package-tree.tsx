@@ -5,11 +5,13 @@ import { SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import type { PackageData } from "@/types/package-types";
+import { usePackage } from "@/context/package-context.tsx";
 
 interface FlattenedPackage {
   id: string;
   name: string;
   version: string;
+  location: string;
   level: number;
   hasChildren: boolean;
   isExpanded: boolean;
@@ -18,20 +20,20 @@ interface FlattenedPackage {
   parentId?: string;
 }
 
-const getTypeColor = (type: string) => {
-  switch (type) {
-    case "regular":
-      return "text-blue-500";
-    case "dev":
-      return "text-purple-500";
-    case "optional":
-      return "text-yellow-500";
-    case "peer":
-      return "text-pink-500";
-    default:
-      return "text-blue-500";
-  }
-};
+// const getTypeColor = (type: string) => {
+//   switch (type) {
+//     case "regular":
+//       return "text-blue-500";
+//     case "dev":
+//       return "text-purple-500";
+//     case "optional":
+//       return "text-yellow-500";
+//     case "peer":
+//       return "text-pink-500";
+//     default:
+//       return "text-blue-500";
+//   }
+// };
 
 const getPackageIcon = (type: string) => {
   const baseClasses = "h-4 w-4";
@@ -63,6 +65,9 @@ export function PackageTree({
   onSelectPackage,
   activeFilters,
 }: PackageTreeProps) {
+  const { findPackage } = usePackage();
+  const rootPackage = findPackage('')
+
   console.log({ packageData });
   const [expandedPackages, setExpandedPackages] = useState<
     Record<string, boolean>
@@ -71,13 +76,14 @@ export function PackageTree({
 
   // Get direct dependencies
   const directDependencies = useMemo(() => {
-    return {
-      ...packageData.packages,
-      ...packageData.dependencies,
-      ...packageData.devDependencies,
-      ...packageData.optionalDependencies,
-      ...packageData.peerDependencies,
-    };
+
+    return rootPackage ? {
+      ...rootPackage.packages,
+      ...rootPackage.dependencies,
+      ...rootPackage.devDependencies,
+      ...rootPackage.optionalDependencies,
+      ...rootPackage.peerDependencies,
+    } : {}
   }, [packageData]);
 
   console.log({ directDependencies })
@@ -89,37 +95,40 @@ export function PackageTree({
         return parentType;
       }
 
-      if (packageData.dependencies && name in packageData.dependencies)
+      if (rootPackage.dependencies && name in rootPackage.dependencies)
         return "regular";
-      if (packageData.devDependencies && name in packageData.devDependencies)
+
+      if (rootPackage.devDependencies && name in rootPackage.devDependencies)
         return "dev";
+
       if (
-        packageData.optionalDependencies &&
-        name in packageData.optionalDependencies
+          rootPackage.optionalDependencies &&
+        name in rootPackage.optionalDependencies
       )
         return "optional";
-      if (packageData.peerDependencies && name in packageData.peerDependencies)
+
+      if (rootPackage.peerDependencies && name in rootPackage.peerDependencies)
         return "peer";
 
       // For transitive dependencies, check if they're required by any package of the filtered type
       if (activeFilters.length > 0) {
-        const pkg = packageData.packages?.[`node_modules/${name}`];
+        const pkg = findPackage(name);
 
         if (pkg) {
           for (const filter of activeFilters) {
             const filterDeps =
               filter === "dev"
-                ? packageData.devDependencies
+                ? rootPackage.devDependencies
                 : filter === "optional"
-                ? packageData.optionalDependencies
+                ? rootPackage.optionalDependencies
                 : filter === "peer"
-                ? packageData.peerDependencies
-                : packageData.dependencies;
+                ? rootPackage.peerDependencies
+                : rootPackage.dependencies;
 
             if (
               filterDeps &&
               Object.keys(filterDeps).some((dep) => {
-                const depPkg = packageData.packages?.[`node_modules/${dep}`];
+                const depPkg = findPackage(dep)
                 return (
                   depPkg && depPkg.dependencies && name in depPkg.dependencies
                 );
@@ -136,20 +145,20 @@ export function PackageTree({
     [packageData, activeFilters]
   );
 
-  const getDependencyCount = (packageName: string) => {
-    const pkg = packageData.packages?.[`node_modules/${packageName}`];
-
-    if (!pkg) return 0;
-
-    const dependencies = {
-      ...pkg.dependencies,
-      ...pkg.devDependencies,
-      ...pkg.peerDependencies,
-      ...pkg.optionalDependencies,
-    };
-
-    return Object.keys(dependencies || {}).length;
-  };
+  // const getDependencyCount = (packageName: string) => {
+  //   const pkg = packageData.packages?.[`node_modules/${packageName}`];
+  //
+  //   if (!pkg) return 0;
+  //
+  //   const dependencies = {
+  //     ...pkg.dependencies,
+  //     ...pkg.devDependencies,
+  //     ...pkg.peerDependencies,
+  //     ...pkg.optionalDependencies,
+  //   };
+  //
+  //   return Object.keys(dependencies || {}).length;
+  // };
 
   // Flatten the tree structure for virtualization
   const flattenPackages = useMemo(() => {
@@ -174,28 +183,21 @@ export function PackageTree({
           return matchesSearch && matchesFilter;
         })
         // .sort(([a], [b]) => a.localeCompare(b))
-        .forEach(([name, version]) => {
+        .forEach(([name]) => {
           const id = parentId ? `${parentId}-${name}` : name;
 
-          const pkg = packageData.packages?.[`node_modules/${name}`];
+          const pkg = findPackage(name);
 
-          const dependencies = pkg
-            ? {
-                ...pkg.dependencies,
-                ...pkg.devDependencies,
-                ...pkg.peerDependencies,
-                ...pkg.optionalDependencies,
-              }
-            : {};
+          const dependencies = pkg ? pkg.dependencies : null;
           const dependencyCount = Object.keys(dependencies || {}).length;
           const type = getPackageType(name, parentType);
 
           flattened.push({
             id,
-            name,
-            version:
-              typeof version === "string" ? version : version.version || "",
+            name: pkg.name,
+            version: pkg.version,
             level,
+            location: pkg?.location || '',
             hasChildren: dependencyCount > 0,
             isExpanded: !!expandedPackages[id],
             type,
@@ -217,7 +219,6 @@ export function PackageTree({
     directDependencies,
     expandedPackages,
     searchQuery,
-    packageData.packages,
     activeFilters,
     getPackageType,
   ]);
@@ -289,7 +290,7 @@ export function PackageTree({
                       )}
                       <SidebarMenuButton
                         isActive={selectedPackage === pkg.name}
-                        onClick={() => onSelectPackage(pkg.name)}
+                        onClick={() => onSelectPackage(pkg.location)}
                         className="flex-1"
                       >
                         {getPackageIcon(pkg.type)}

@@ -1,24 +1,24 @@
+export function SidebarStats({ total, direct, optional, types }: {
+    total: number,
+    direct: number,
+    optional: number,
+    types: number
+}) {
+    const items = [
+        { value: total, label: 'total', icon: '📦' },
+        { value: direct, label: 'direct', icon: '📦' },
+        { value: optional, label: 'optional', icon: '📦' },
+        { value: types, label: 'types', icon: '📦' }
+    ]
 
-
-export function SidebarStats({ total, direct, optional, types }: { total: number, direct: number, optional: number, types: number }) {
     return (
-        <div className="grid grid-cols-2 gap-2 px-2 mb-2">
-            <div className="flex flex-col text-xs">
-                <span className="font-medium">{total}</span>
-                <span className="text-muted-foreground">total</span>
-            </div>
-            <div className="flex flex-col text-xs">
-                <span className="font-medium">{direct}</span>
-                <span className="text-muted-foreground">direct</span>
-            </div>
-            <div className="flex flex-col text-xs">
-                <span className="font-medium">{optional}</span>
-                <span className="text-muted-foreground">optional</span>
-            </div>
-            <div className="flex flex-col text-xs">
-                <span className="font-medium">{types}</span>
-                <span className="text-muted-foreground">types</span>
-            </div>
+        <div className="grid grid-cols-4 gap-2 px-2 mb-2">
+            {items.map(({ value, label, icon }) => (
+                <div className="flex flex-col text-xs">
+                    <span className="font-medium">{value}{' '}{icon}</span>
+                    <span className="text-muted-foreground">{label}</span>
+                </div>
+            ))}
         </div>
     )
 }

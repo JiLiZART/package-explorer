@@ -1,12 +1,12 @@
 import { Home } from "lucide-react";
 // import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useSearchQuery } from "@/context/search-query-context";
 import { useNavigate } from "@tanstack/react-router";
+import { usePackage } from "@/context/package-context";
 
 export function Header() {
   const navigate = useNavigate();
-  const { searchQuery, setSearchQuery } = useSearchQuery();
+  const { searchQuery, search } = usePackage();
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b">
@@ -23,7 +23,7 @@ export function Header() {
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => search(e.target.value)}
             placeholder="Search packages..."
             className="w-full px-3 py-1.5 rounded border focus:outline-none focus:ring-2"
           />
